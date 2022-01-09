@@ -1,6 +1,5 @@
-# https://pypi.org/project/pycountry/
-# https://pypi.org/project/pycountry-convert/
-
+# Regler probleme pays avec espace dans leur nonm (uk, usa, ...)
+# Ajouter description et lien page animal en meme temps
 # merge get_animals_data_from_file and get_animals_data
 # Traduire pays, names et description en français 
 # See if possible to remove past uncessary commits from version history
@@ -9,12 +8,15 @@
 # On peut creer une librairie simple utilisant les fonctions de base (généralité de ce que lon compose) 
 
 import pandas as pd
+import pycountry
 import requests
 import streamlit as st
 from bs4 import BeautifulSoup
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2
 
 CONTINENTS = {'AF': 'africa', 'EU': 'europe', 'SA': 'south-america', 'NA': 'north-america', 'OC': 'oceania'}
+
+COUNTRIES = [country.name for country in list(pycountry.countries)]
 
 BASE_URL = 'https://a-z-animals.com/animals/'
 
@@ -29,13 +31,15 @@ def get_country_continent(country):
         country_continent = 'Inconnu' 
     return country_continent
 
-
 def get_page_soup(country):
     continent_code = get_country_continent(country)
+    # st.write(continent_code)
     continent = CONTINENTS[continent_code]
-    r = requests.get(BASE_URL + 'location/' + continent + '/' + country + '/')
+    # st.write(continent)
+    r = requests.get(BASE_URL + 'location/' + continent + '/' + country.replace(' ', '-') + '/')
     soup = BeautifulSoup(r.content, 'html.parser')
     return soup
+
 
 def get_animals_data_from_file(filename):
     page_urls, image_urls, names, descriptions = [], [], [], []
@@ -66,7 +70,7 @@ def get_animals_data_from_file(filename):
     return pd.DataFrame(data)
 
 
-@st.cache        
+@st.cache
 def get_animals_data(country):
     data = {}
     page_urls, image_urls, names, descriptions = [], [], [], []    
@@ -75,6 +79,8 @@ def get_animals_data(country):
     for card_div in card_divs:
         page_url = card_div.a['href']
         image_url = card_div.img['src']
+        if image_url == '':
+            image_url = 'https://via.placeholder.com/400x300'
         name = card_div.h5.a.get_text()
         description = card_div.find(class_='card-fun-fact')
         if description is None:
@@ -94,5 +100,9 @@ def get_animals_data(country):
         
     return pd.DataFrame(data)
 
+
 def draw_images_grid_from_df(df):
-    st.image(df['image_urls'].to_list(), df['names'].to_list())
+
+    captions_series = df['names'] + ' - ' + df['descriptions']
+    
+    st.image(df['image_urls'].to_list(), captions_series.to_list(), 400)
