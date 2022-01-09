@@ -1,37 +1,41 @@
-# Remove unused vars & funs once main functions built
-# Traduire names et description en français 
+# https://pypi.org/project/pycountry/
+# https://pypi.org/project/pycountry-convert/
+
+# merge get_animals_data_from_file and get_animals_data
+# Traduire pays, names et description en français 
 # See if possible to remove past uncessary commits from version history
 # Translate BS manual into French + Spanish (Linguee)
 # Images et description par pays (afrique puis Europe)
 # On peut creer une librairie simple utilisant les fonctions de base (généralité de ce que lon compose) 
 
 import pandas as pd
-import re
 import requests
 import streamlit as st
 from bs4 import BeautifulSoup
+from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2
+
+CONTINENTS = {'AF': 'africa', 'EU': 'europe', 'SA': 'south-america', 'NA': 'north-america', 'OC': 'oceania'}
 
 BASE_URL = 'https://a-z-animals.com/animals/'
 
-# Use for both name and page url
-NAME_PATTERN = re.compile(r'^<a href="https://a-z-animals.com/animals/(.+)/">')
-IMAGE_URL_PATTERN = re.compile(r'src="https://a-z-animals.com/media/animals/images/original/([a-z]+-\d+x\d+.jpg)"')
-DESCRIPTION_PATTERN = re.compile(r'<p class="card-fun-fact">(.+)</p>')
-
-
-
-def get_page_local_soup(country):
-    with open(country + 'location/' + '.html') as f:
-        soup = BeautifulSoup(f, 'html.parser')
-    return soup
+def get_country_continent(country):
+    try:
+        country_code =  country_name_to_country_alpha2(country, cn_name_format='lower')
+    except:
+        country_code = 'Inconnu' 
+    try:
+        country_continent = country_alpha2_to_continent_code(country_code)
+    except:
+        country_continent = 'Inconnu' 
+    return country_continent
 
 
 def get_page_soup(country):
-    continent = 'africa'
+    continent_code = get_country_continent(country)
+    continent = CONTINENTS[continent_code]
     r = requests.get(BASE_URL + 'location/' + continent + '/' + country + '/')
     soup = BeautifulSoup(r.content, 'html.parser')
     return soup
-
 
 def get_animals_data_from_file(filename):
     page_urls, image_urls, names, descriptions = [], [], [], []
@@ -49,7 +53,6 @@ def get_animals_data_from_file(filename):
             else:
                 description = description.get_text()
             
-            # print(f'{name}, {page_url}, {image_url}, {description}')
             page_urls.append(page_url)
             image_urls.append(image_url)
             names.append(name)
@@ -65,9 +68,8 @@ def get_animals_data_from_file(filename):
 
 @st.cache        
 def get_animals_data(country):
-    page_urls, image_urls, names, descriptions = [], [], [], []
     data = {}
-    
+    page_urls, image_urls, names, descriptions = [], [], [], []    
     soup = get_page_soup(country)
     card_divs = soup.find_all('div', class_='card')
     for card_div in card_divs:
@@ -79,8 +81,7 @@ def get_animals_data(country):
             description = 'Dummy empty description here'
         else:
             description = description.get_text()
-                
-            # print(f'{name}, {page_url}, {image_url}, {description}')
+            
         page_urls.append(page_url)
         image_urls.append(image_url)
         names.append(name)
@@ -93,6 +94,5 @@ def get_animals_data(country):
         
     return pd.DataFrame(data)
 
-            
 def draw_images_grid_from_df(df):
     st.image(df['image_urls'].to_list(), df['names'].to_list())
