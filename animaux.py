@@ -1,4 +1,5 @@
-# Tout refaire en repartant de la base qu'avec requests et regexes
+# Next Dataframe function
+# Then scrape from Live Webpage any african country first
 # Images et description par pays (afrique puis Europe)
 # On peut creer une librairie simple utilisant les fonctions de base (généralité de ce que lon compose) 
 
@@ -29,20 +30,24 @@ def get_page_soup(country):
     soup = BeautifulSoup(r.content, 'html.parser')
     return soup
 
-# def get_animals_data(country):
-#     data = {}
-#     soup = get_page_soup(country)
-#     card_divs = soup.find_all('div', class_='card')
-#     for card in card_divs:
-#         name = NAME_PATTERN.search(card).groups()[0]
-#         page_url = BASE_URL + name
-#         image_url = IMAGE_URL.search(card).groups()[0]
-#         description = DESCRIPTION_PATTERN.search(card).groups()[0]
-        
-#         data[name] = {'page_url': page_url,'image_url': image_url, 'description': description}
 
-#     return data
-
+def get_animals_data_from_file():
+    data = {}
+    with open('togo.html') as f:
+        soup = BeautifulSoup(f.read(), 'html.parser')
+        card_divs = soup.find_all('div', class_='card')
+        for card_div in card_divs:
+            page_url = card_div.a['href']
+            image_url = card_div.img['src']
+            name = card_div.h5.a.get_text()
+            description = card_div.find(class_='card-fun-fact')
+            if description is None:
+                description = 'Dummy empty description here'
+            else:
+                description = description.get_text()
+            
+            print(f'{name}, {page_url}, {image_url}, {description}')
+    
 
 def get_animals_data(country):
     data = {}
@@ -69,6 +74,6 @@ def get_animals_data(country):
             
         
 
-@st.cache
+# @st.cache
 def df_from_content(country):
     pass
