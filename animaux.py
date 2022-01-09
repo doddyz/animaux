@@ -1,6 +1,5 @@
-# Next Dataframe function
-# Then scrape from Live Webpage any african country first
 # Remove unused vars & funs once main functions built
+# Traduire names et description en français 
 # See if possible to remove past uncessary commits from version history
 # Translate BS manual into French + Spanish (Linguee)
 # Images et description par pays (afrique puis Europe)
@@ -11,7 +10,6 @@ import re
 import requests
 import streamlit as st
 from bs4 import BeautifulSoup
-from bs4 import NavigableString, Tag
 
 BASE_URL = 'https://a-z-animals.com/animals/'
 
@@ -65,7 +63,7 @@ def get_animals_data_from_file(filename):
     return pd.DataFrame(data)
 
 
-# @st.cache        
+@st.cache        
 def get_animals_data(country):
     page_urls, image_urls, names, descriptions = [], [], [], []
     data = {}
@@ -97,4 +95,4 @@ def get_animals_data(country):
 
             
 def draw_images_grid_from_df(df):
-    st.images(df['image_urls'].to_list(), df['Names'].to_list())
+    st.image(df['image_urls'].to_list(), df['names'].to_list())
